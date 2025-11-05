@@ -1,4 +1,4 @@
-# Delphi 10.2 + IIS + MS SQL Server: пример WEB-приложения (WebBroker ISAPI)
+# Delphi 12.1 + MS SQL Server: пример WEB-приложения
 
 ## 1) Краткий обзор рынка и архитектур WEB‑приложений
 
@@ -22,26 +22,12 @@
 3. **Отчеты/дашборды**: read‑replica БД, кэширование.  
 4. **CRM‑лайт**: готовый SaaS + тонкая интеграция через веб‑хуки, синхронизация с внутренними сервисами.
 
-## 3) Практика: WebBroker ISAPI на Delphi 10.2 + IIS + MS SQL Server
+## 3) Практика: Delphi 12.1 + MS SQL Server
 
 ### Возможности демо
 - REST API: `/api/products` (GET — список, POST — создать), `/api/products/{id}` (GET/PUT/DELETE), `/health`.
 - Подключение к **MS SQL Server** через **FireDAC**.
 - Простая HTML‑страница для ручного теста API.
-
-### Быстрый старт
-1. Выполните скрипт БД `db/mssql/01_schema.sql` в MSSQL.  
-2. Откройте проект `src/DelphiWebApp.dpr` в Delphi, соберите **ISAPI DLL** (Win32).  
-3. В IIS:  
-   - Включите **ISAPI Extensions** и **ISAPI Filters**.  
-   - Создайте AppPool (вкл. 32‑bit apps = **True**, Pipeline = Integrated).  
-   - Создайте сайт/виртуальный каталог, укажите физическую папку с DLL (например, `C:\inetpub\delphiapp`).  
-   - Привяжите каталог к пулу, добавьте **Handler Mapping**: `*.dll` → `IsapiModule` (разрешить).  
-   - Разрешите исполняемые файлы (Request Filtering → File Name Extensions → .dll → Allow).  
-4. Скопируйте скомпилированную `DelphiWebApp.dll` в корень сайта.  
-5. Проверьте:  
-   - `GET http://localhost/DelphiWebApp.dll/health` → `{"status":"ok"}`  
-   - `GET http://localhost/DelphiWebApp.dll/api/products` → JSON со списком.
 
 ### Переменные окружения (рекомендовано)
 - `DB_SERVER` (по умолчанию `localhost`), `DB_DATABASE` (`DelphiShop`), `DB_USER`, `DB_PASSWORD`.  
@@ -51,15 +37,15 @@
 ```
 delphi-web-arch-sample/
 ├─ README.md
-├─ docs/
-│  └─ iis_setup.md
 ├─ db/
 │  └─ mssql/
 │     └─ 01_schema.sql
 └─ src/
-   ├─ DelphiWebApp.dpr
-   ├─ WebModuleUnit1.pas
-   └─ WebModuleUnit1.dfm
+   ├─ Task4.dpr
+   ├─ Task4FormUnit.pas
+   |─ Task4FormUnit.dfm
+   ├─ Task4WebModuleUnit.pas
+   └─ Task4WebModuleUnit.dfm
 ```
 
 ## 4) Экспорт схемы БД
@@ -69,4 +55,4 @@ delphi-web-arch-sample/
 ---
 
 **Лицензия:** MIT.  
-**Назначение:** учебный пример для проверки навыков WEB‑архитектуры и деплоя под IIS.
+**Назначение:** учебный пример для проверки навыков WEB‑архитектуры
