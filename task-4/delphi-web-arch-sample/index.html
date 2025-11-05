@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Delphi WebBroker API тест</title></head>
+<body>
+<h1>Тест API</h1>
+<button id="load">Загрузить товары</button>
+<pre id="out"></pre>
+<script>
+document.getElementById('load').onclick = async () => {
+  const res = await fetch('DelphiWebApp.dll/api/products');
+  document.getElementById('out').textContent = await res.text();
+};
+</script>
+</body>
+</html>

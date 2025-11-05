@@ -1,0 +1,320 @@
+unit WebModuleUnit1;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, System.JSON, System.StrUtils,
+  Web.HTTPApp, Web.WebReq, Web.WebBroker,
+  Data.Win.ADODB, Data.DB, Winapi.ActiveX, System.Win.ComObj;
+
+type
+  TWebModule1 = class(TWebModule)
+    procedure WebModuleDefaultHandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
+    procedure WebModuleCreate(Sender: TObject);
+    procedure WebModuleDestroy(Sender: TObject);
+  private
+    function DBConnection: TADOConnection;
+    procedure SendJSON(Response: TWebResponse; const Json: string; Code: Integer = 200);
+    function Route(Request: TWebRequest; Response: TWebResponse): Boolean;
+    function HandleHealth(Response: TWebResponse): Boolean;
+    function HandleGetProducts(Response: TWebResponse): Boolean;
+    function HandleGetProduct(const Id: Integer; Response: TWebResponse): Boolean;
+    function HandleCreateProduct(Request: TWebRequest; Response: TWebResponse): Boolean;
+    function HandleUpdateProduct(const Id: Integer; Request: TWebRequest; Response: TWebResponse): Boolean;
+    function HandleDeleteProduct(const Id: Integer; Response: TWebResponse): Boolean;
+  public
+  end;
+
+var
+  WebModuleClass: TComponentClass = TWebModule1;
+
+implementation
+
+{$R *.dfm}
+
+function GetEnvDef(const Name, Def: string): string;
+var
+  V: string;
+begin
+  V := GetEnvironmentVariable(Name);
+  if V = '' then Result := Def else Result := V;
+end;
+
+procedure TWebModule1.SendJSON(Response: TWebResponse; const Json: string; Code: Integer);
+begin
+  Response.StatusCode := Code;
+  Response.ContentType := 'application/json; charset=utf-8';
+  Response.Content := Json;
+end;
+
+function TWebModule1.DBConnection: TADOConnection;
+var
+  Cn: TADOConnection;
+  Server, DB, User, Pwd, ConnStr: string;
+begin
+  Server := GetEnvDef('DB_SERVER', 'localhost');
+  DB     := GetEnvDef('DB_DATABASE', 'DelphiShop');
+  User   := GetEnvDef('DB_USER', '');
+  Pwd    := GetEnvDef('DB_PASSWORD', '');
+
+  if (User <> '') and (Pwd <> '') then
+    ConnStr := Format('Provider=SQLOLEDB;Data Source=%s;Initial Catalog=%s;User ID=%s;Password=%s;',
+      [Server, DB, User, Pwd])
+  else
+    ConnStr := Format('Provider=SQLOLEDB;Data Source=%s;Initial Catalog=%s;Integrated Security=SSPI;',
+      [Server, DB]);
+
+  Cn := TADOConnection.Create(nil);
+  Cn.LoginPrompt := False;
+  Cn.ConnectionString := ConnStr;
+  Cn.Connected := True;
+  Result := Cn;
+end;
+
+function DatasetToJSONArray(DS: TDataSet): string;
+var
+  Arr: TJSONArray;
+  Obj: TJSONObject;
+begin
+  Arr := TJSONArray.Create;
+  try
+    DS.First;
+    while not DS.Eof do
+    begin
+      Obj := TJSONObject.Create;
+      Obj.AddPair('id', TJSONNumber.Create(DS.FieldByName('Id').AsInteger));
+      Obj.AddPair('name', DS.FieldByName('Name').AsString);
+      Obj.AddPair('price', TJSONNumber.Create(DS.FieldByName('Price').AsFloat));
+      Obj.AddPair('createdAt', DS.FieldByName('CreatedAt').AsString);
+      Arr.AddElement(Obj);
+      DS.Next;
+    end;
+    Result := Arr.ToJSON;
+  finally
+    Arr.Free;
+  end;
+end;
+
+function TWebModule1.HandleHealth(Response: TWebResponse): Boolean;
+begin
+  SendJSON(Response, '{"status":"ok"}', 200);
+  Result := True;
+end;
+
+function TWebModule1.HandleGetProducts(Response: TWebResponse): Boolean;
+var
+  Cn: TADOConnection;
+  Q: TADOQuery;
+begin
+  Cn := DBConnection;
+  try
+    Q := TADOQuery.Create(nil);
+    try
+      Q.Connection := Cn;
+      Q.SQL.Text := 'SELECT Id, Name, Price, CreatedAt FROM dbo.Products ORDER BY Id';
+      Q.Open;
+      SendJSON(Response, DatasetToJSONArray(Q), 200);
+    finally
+      Q.Free;
+    end;
+  finally
+    Cn.Free;
+  end;
+  Result := True;
+end;
+
+function TWebModule1.HandleGetProduct(const Id: Integer; Response: TWebResponse): Boolean;
+var
+  Cn: TADOConnection;
+  Q: TADOQuery;
+  Obj: TJSONObject;
+begin
+  Cn := DBConnection;
+  try
+    Q := TADOQuery.Create(nil);
+    try
+      Q.Connection := Cn;
+      Q.SQL.Text := 'SELECT Id, Name, Price, CreatedAt FROM dbo.Products WHERE Id = :id';
+      Q.Parameters.ParamByName('id').Value := Id;
+      Q.Open;
+      if Q.Eof then
+        SendJSON(Response, '{"error":"not found"}', 404)
+      else
+      begin
+        Obj := TJSONObject.Create;
+        try
+          Obj.AddPair('id', TJSONNumber.Create(Q.FieldByName('Id').AsInteger));
+          Obj.AddPair('name', Q.FieldByName('Name').AsString);
+          Obj.AddPair('price', TJSONNumber.Create(Q.FieldByName('Price').AsFloat));
+          Obj.AddPair('createdAt', Q.FieldByName('CreatedAt').AsString);
+          SendJSON(Response, Obj.ToJSON, 200);
+        finally
+          Obj.Free;
+        end;
+      end;
+    finally
+      Q.Free;
+    end;
+  finally
+    Cn.Free;
+  end;
+  Result := True;
+end;
+
+function TWebModule1.HandleCreateProduct(Request: TWebRequest; Response: TWebResponse): Boolean;
+var
+  Body: string;
+  Json: TJSONObject;
+  Cn: TADOConnection;
+  Q: TADOQuery;
+  NewId: Integer;
+begin
+  Body := Request.Content;
+  Json := TJSONObject.ParseJSONValue(Body) as TJSONObject;
+  if Json = nil then
+  begin
+    SendJSON(Response, '{"error":"invalid json"}', 400);
+    Exit(True);
+  end;
+  try
+    Cn := DBConnection;
+    try
+      Q := TADOQuery.Create(nil);
+      try
+        Q.Connection := Cn;
+        Q.SQL.Text :=
+          'SET NOCOUNT ON; ' +
+          'INSERT INTO dbo.Products (Name, Price) VALUES (:n,:p); ' +
+          'SELECT CAST(SCOPE_IDENTITY() AS INT) AS NewId;';
+        Q.Parameters.ParamByName('n').Value := Json.GetValue<string>('name');
+        Q.Parameters.ParamByName('p').Value := Json.GetValue<Double>('price');
+        Q.Open;
+        NewId := Q.FieldByName('NewId').AsInteger;
+        SendJSON(Response, Format('{"id":%d}', [NewId]), 201);
+      finally
+        Q.Free;
+      end;
+    finally
+      Cn.Free;
+    end;
+  finally
+    Json.Free;
+  end;
+  Result := True;
+end;
+
+function TWebModule1.HandleUpdateProduct(const Id: Integer; Request: TWebRequest; Response: TWebResponse): Boolean;
+var
+  Body: string;
+  Json: TJSONObject;
+  Cn: TADOConnection;
+  Q: TADOQuery;
+begin
+  Body := Request.Content;
+  Json := TJSONObject.ParseJSONValue(Body) as TJSONObject;
+  if Json = nil then
+  begin
+    SendJSON(Response, '{"error":"invalid json"}', 400);
+    Exit(True);
+  end;
+  try
+    Cn := DBConnection;
+    try
+      Q := TADOQuery.Create(nil);
+      try
+        Q.Connection := Cn;
+        Q.SQL.Text := 'UPDATE dbo.Products SET Name = :n, Price = :p WHERE Id = :id';
+        Q.Parameters.ParamByName('n').Value := Json.GetValue<string>('name');
+        Q.Parameters.ParamByName('p').Value := Json.GetValue<Double>('price');
+        Q.Parameters.ParamByName('id').Value := Id;
+        Q.ExecSQL;
+        SendJSON(Response, '{"status":"updated"}', 200);
+      finally
+        Q.Free;
+      end;
+    finally
+      Cn.Free;
+    end;
+  finally
+    Json.Free;
+  end;
+  Result := True;
+end;
+
+function TWebModule1.HandleDeleteProduct(const Id: Integer; Response: TWebResponse): Boolean;
+var
+  Cn: TADOConnection;
+  Q: TADOQuery;
+begin
+  Cn := DBConnection;
+  try
+    Q := TADOQuery.Create(nil);
+    try
+      Q.Connection := Cn;
+      Q.SQL.Text := 'DELETE FROM dbo.Products WHERE Id = :id';
+      Q.Parameters.ParamByName('id').Value := Id;
+      Q.ExecSQL;
+      SendJSON(Response, '{"status":"deleted"}', 200);
+    finally
+      Q.Free;
+    end;
+  finally
+    Cn.Free;
+  end;
+  Result := True;
+end;
+
+function TWebModule1.Route(Request: TWebRequest; Response: TWebResponse): Boolean;
+var
+  Path: string;
+  Segs: TArray<string>;
+  Id: Integer;
+begin
+  Result := False;
+  Path := Request.PathInfo;
+  if Path = '' then Path := '/';
+
+  if SameText(Path, '/health') and SameText(Request.Method, 'GET') then
+    Exit(HandleHealth(Response));
+
+  if StartsText('/api/products', Path) then
+  begin
+    Segs := Path.Split(['/'], TStringSplitOptions.ExcludeEmpty);
+    if (Length(Segs) = 2) and SameText(Segs[0], 'api') and SameText(Segs[1], 'products') then
+    begin
+      if SameText(Request.Method, 'GET') then Exit(HandleGetProducts(Response));
+      if SameText(Request.Method, 'POST') then Exit(HandleCreateProduct(Request, Response));
+    end
+    else if (Length(Segs) = 3) and TryStrToInt(Segs[2], Id) then
+    begin
+      if SameText(Request.Method, 'GET') then Exit(HandleGetProduct(Id, Response));
+      if SameText(Request.Method, 'PUT') then Exit(HandleUpdateProduct(Id, Request, Response));
+      if SameText(Request.Method, 'DELETE') then Exit(HandleDeleteProduct(Id, Response));
+    end;
+  end;
+end;
+
+procedure TWebModule1.WebModuleDefaultHandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
+begin
+  Handled := Route(Request, Response);
+  if not Handled then
+  begin
+    Response.StatusCode := 404;
+    Response.ContentType := 'application/json';
+    Response.Content := '{"error":"not found"}';
+  end;
+end;
+
+procedure TWebModule1.WebModuleCreate(Sender: TObject);
+begin
+  // STA достаточно для ADO, ошибок тут не ловим
+  CoInitialize(nil);
+end;
+
+procedure TWebModule1.WebModuleDestroy(Sender: TObject);
+begin
+  CoUninitialize;
+end;
+
+end.
+

@@ -1,0 +1,6 @@
+object WebModule1: TWebModule1
+  OldCreateOrder = False
+  OnDefaultHandlerAction = WebModuleDefaultHandlerAction
+  Height = 300
+  Width = 300
+end

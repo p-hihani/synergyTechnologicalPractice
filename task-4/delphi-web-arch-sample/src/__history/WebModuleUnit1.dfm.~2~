@@ -1,0 +1,5 @@
+object WebModule1: TWebModule1
+  Actions = <>
+  Height = 300
+  Width = 300
+end

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899.12.30 00:00:00.000.413,=C:\Users\user\Documents\Embarcadero\Studio\Projects\FormUnit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.586,=C:\Users\user\Documents\Embarcadero\Studio\Projects\WebModuleUnit1.pas</Transaction>
+    <Transaction>2025.11.05 12:24:27.624,=C:\Users\user\Documents\Embarcadero\Studio\Projects\FormUnit1.pas</Transaction>
+    <Transaction>2025.11.05 12:24:27.771,=C:\Users\user\Documents\Embarcadero\Studio\Projects\WebModuleUnit1.pas</Transaction>
+    <Transaction>2025.11.05 12:24:44.114,=C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\WebModuleUnit1.pas</Transaction>
+    <Transaction>2025.11.05 12:37:02.658,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\FormUnit1.dfm=C:\Users\user\Documents\Embarcadero\Studio\Projects\FormUnit1.dfm</Transaction>
+    <Transaction>2025.11.05 12:37:02.658,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\FormUnit1.pas=C:\Users\user\Documents\Embarcadero\Studio\Projects\FormUnit1.pas</Transaction>
+    <Transaction>2025.11.05 12:37:11.932,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4.dproj=C:\Users\user\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>2025.11.05 12:37:23.903,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4.dproj=C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4.dproj</Transaction>
+    <Transaction>2025.11.05 12:37:51.151,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4.dproj=C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4.dproj</Transaction>
+    <Transaction>2025.11.05 12:37:59.341,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4FormUnit.dfm=C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\FormUnit1.dfm</Transaction>
+    <Transaction>2025.11.05 12:37:59.341,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4FormUnit.pas=C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\FormUnit1.pas</Transaction>
+    <Transaction>2025.11.05 12:38:10.580,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4WebModuleUnit.dfm=C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\WebModuleUnit1.dfm</Transaction>
+    <Transaction>2025.11.05 12:38:10.580,C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\Task4WebModuleUnit.pas=C:\projects\synergyTechnologicalPractice\task-4\delphi-web-arch-sample\src\WebModuleUnit1.pas</Transaction>
+  </Transactions>
+</BorlandProject>
